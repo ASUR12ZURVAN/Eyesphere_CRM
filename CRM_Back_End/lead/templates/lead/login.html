@@ -1,0 +1,23 @@
+{% extends 'lead/base.html' %}
+{% block title %}Sign in{% endblock %}
+{% block public_content %}
+<main class="login-layout">
+  <section class="login-aside">
+    <div class="brand brand-light"><span class="brand-mark">E</span><span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span></div>
+    <div class="login-message"><div class="eyebrow">A clearer way to care</div><h1>Every conversation<br>moves care forward.</h1><p>One calm workspace for your patient leads, follow-ups and bookings.</p></div>
+    <div class="login-orbit orbit-one"></div><div class="login-orbit orbit-two"></div>
+    <div class="login-footnote">Care, connected.</div>
+  </section>
+  <section class="login-panel">
+    <form class="login-form" method="post">
+      {% csrf_token %}<div class="eyebrow">Welcome back</div><h2>Sign in to CareBuddy</h2><p class="muted">Use your workspace account to continue.</p>
+      {% if form.errors %}<div class="form-errors">Your username or password didn't match. Try again.</div>{% endif %}
+      <label class="field-label" for="id_username">Username</label>{{ form.username }}
+      <label class="field-label" for="id_password">Password</label>{{ form.password }}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="button button-primary button-wide" type="submit">Sign in <span>→</span></button>
+      <div class="login-security"><span>●</span> Private, single-user workspace</div>
+    </form>
+  </section>
+</main>
+{% endblock %}
