@@ -31,3 +31,5 @@ python manage.py test lead
 ```
 
 Google Sheets, Gmail, WhatsApp messaging, and telephony are external integrations and are not enabled in this MVP. Before deployment, configure a production `SECRET_KEY`, `DEBUG=False`, allowed hosts, HTTPS, and a database backup policy.
+
+The database connection is read from `DATABASE_URL`. Set it to the connection URL provided by Neon; SSL is required. Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.
