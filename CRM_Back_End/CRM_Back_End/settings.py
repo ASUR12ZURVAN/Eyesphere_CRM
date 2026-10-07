@@ -30,6 +30,7 @@ SECRET_KEY = 'django-insecure-z5o=-jguh$9!_407eqfzdxikixrvo240g$j8^9-8caz+n2k0og
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = ["https://eyesphere-crm.onrender.com"]
 
 
 # Application definition
@@ -82,8 +83,23 @@ if not os.environ.get('DATABASE_URL'):
     raise ImproperlyConfigured('Set the DATABASE_URL environment variable.')
 
 DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True),
+    "default":dj_database_url.parse(
+        os.environ["DATABASE_URL"],
+        conn_max_age=600,
+        ssl_require=True,
+    ),
+
+    "read_replica":dj_database_url.parse(
+        os.environ["READ_DATABASE_URL"],
+        conn_max_age=600,
+        ssl_require=True,
+    ),
 }
+
+DATABASE_ROUTERS = ["CRM_Back_End.db_router.PrimaryReplicaRouter"]
+DATABASE_REPLICA_LAG_SECONDS = float(
+    os.environ.get("DATABASE_REPLICA_LAG_SECONDS", "5")
+)
 
 # SQLite configuration:
 # DATABASES = {
