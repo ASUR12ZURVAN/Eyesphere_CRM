@@ -16,19 +16,34 @@
       <p class="muted">Use a username and password to access the dashboard.</p>
 
       {% if form.errors %}
-        <div class="form-errors">
+        <div class="form-errors" role="alert">
           Please correct the highlighted fields and try again.
         </div>
       {% endif %}
+      {% for error in form.non_field_errors %}
+        <div class="form-errors" role="alert">{{ error }}</div>
+      {% endfor %}
 
-      <label class="field-label" for="id_username">Username</label>
-      {{ form.username }}
+      <div class="form-field {% if form.username.errors %}has-errors{% endif %}">
+        <label class="field-label" for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.help_text %}<small class="field-help">{{ form.username.help_text }}</small>{% endif %}
+        {% for error in form.username.errors %}<small class="field-error" role="alert">{{ error }}</small>{% endfor %}
+      </div>
 
-      <label class="field-label" for="id_password1">Password</label>
-      {{ form.password1 }}
+      <div class="form-field {% if form.password1.errors %}has-errors{% endif %}">
+        <label class="field-label" for="{{ form.password1.id_for_label }}">Password</label>
+        {{ form.password1 }}
+        {% if form.password1.help_text %}<small class="field-help">{{ form.password1.help_text }}</small>{% endif %}
+        {% for error in form.password1.errors %}<small class="field-error" role="alert">{{ error }}</small>{% endfor %}
+      </div>
 
-      <label class="field-label" for="id_password2">Confirm password</label>
-      {{ form.password2 }}
+      <div class="form-field {% if form.password2.errors %}has-errors{% endif %}">
+        <label class="field-label" for="{{ form.password2.id_for_label }}">Confirm password</label>
+        {{ form.password2 }}
+        {% if form.password2.help_text %}<small class="field-help">{{ form.password2.help_text }}</small>{% endif %}
+        {% for error in form.password2.errors %}<small class="field-error" role="alert">{{ error }}</small>{% endfor %}
+      </div>
 
       <button class="button button-primary button-wide" type="submit">Create account <span>→</span></button>
       <div class="login-security"><span>●</span> Private single-user workspace</div>
