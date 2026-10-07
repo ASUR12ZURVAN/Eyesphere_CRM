@@ -88,14 +88,18 @@ DATABASES = {
         conn_max_age=600,
         ssl_require=True,
     ),
+}
 
-    "read_replica":dj_database_url.parse(
+if os.environ.get("READ_DATABASE_URL"):
+    DATABASES["read_replica"] = dj_database_url.parse(
         os.environ["READ_DATABASE_URL"],
         conn_max_age=600,
         ssl_require=True,
-    ),
-}
+    )
 
+DATABASE_READ_REPLICA_ENABLED = (
+    os.environ.get("DATABASE_READ_REPLICA_ENABLED", "").lower() == "true"
+)
 DATABASE_ROUTERS = ["CRM_Back_End.db_router.PrimaryReplicaRouter"]
 DATABASE_REPLICA_LAG_SECONDS = float(
     os.environ.get("DATABASE_REPLICA_LAG_SECONDS", "5")

@@ -1,6 +1,14 @@
+from django.conf import settings
+
+
 class PrimaryReplicaRouter:
     def db_for_read(self, model, **hints):
-        return "read_replica"
+        if (
+            settings.DATABASE_READ_REPLICA_ENABLED
+            and "read_replica" in settings.DATABASES
+        ):
+            return "read_replica"
+        return "default"
 
     def db_for_write(self, model, **hints):
         return "default"
