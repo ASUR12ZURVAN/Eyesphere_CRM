@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-z5o=-jguh$9!_407eqfzdxikixrvo240g$j8^9-8caz+n2k0og
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-CSRF_TRUSTED_ORIGINS = ["eyesphere-crm.onrender.com"]
+CSRF_TRUSTED_ORIGINS = ["*"]
 
 
 # Application definition
