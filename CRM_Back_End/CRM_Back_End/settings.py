@@ -93,15 +93,11 @@ if not os.environ.get('DATABASE_URL'):
     raise ImproperlyConfigured('Set the DATABASE_URL environment variable.')
 
 DATABASES = {
-<<<<<<< Updated upstream
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True),
-=======
     "default":dj_database_url.parse(
         os.environ["DATABASE_URL"],
         conn_max_age=600,
         ssl_require=os.environ["DATABASE_URL"].startswith(("postgres://", "postgresql://")),
     ),
->>>>>>> Stashed changes
 }
 
 # SQLite configuration:
