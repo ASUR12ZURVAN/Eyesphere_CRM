@@ -21,6 +21,7 @@ Open `http://127.0.0.1:8000/` and sign in with the account created above. The ad
 - Search and filter leads, add or edit a patient profile, and export the current filtered inventory.
 - Record call outcomes. No-contact outcomes schedule the next weekday retry; the fourth closes the lead as Waste. A conversation resets the retry sequence while retaining every call.
 - Schedule and snooze follow-ups, reactivate rejected or waste leads with a reason, and create bookings with insurance and execution values.
+- Upload PDF, JPEG, and PNG documents (up to 10 MB each) to a lead profile; downloads require a signed-in user. Files are stored under `MEDIA_ROOT` using generated storage names. Configure `MEDIA_ROOT` to a persistent volume or Django-compatible object storage in production so uploads survive redeployments. A vector database is not needed for storing and downloading files; it would only be useful later for semantic search or AI retrieval over document contents.
 - Import CSV files after preview and validation. Required headers are `Name`, `Mobile`, and `Source`; `Campaign`, `Location`, `Email`, and `External Source ID` are also recognized. Existing mobiles and source IDs are skipped.
 - Export daily calling, call history, bookings, revenue, source conversion, and lost-reason reports from the dashboard.
 
@@ -32,4 +33,6 @@ python manage.py test lead
 
 Google Sheets, Gmail, WhatsApp messaging, and telephony are external integrations and are not enabled in this MVP. Before deployment, configure a production `SECRET_KEY`, `DEBUG=False`, allowed hosts, HTTPS, and a database backup policy.
 
-The database connection is read from `DATABASE_URL`. Set it to the connection URL provided by Neon; SSL is required. Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.
+The backend loads environment variables from `.env` in `CRM_Back_End`. Copy `.env.example` to `.env` and replace `your_username` and `your_password` in `DATABASE_URL` with your Neon credentials; SSL is required. `.env` is excluded from version control. An optional `READ_DATABASE_URL` can be set for a read replica. Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.
+
+Requests are rate-limited per client IP in rolling 60-second windows: 10 GET requests and 5 POST or PUT requests. The limiter uses Django's default cache; configure a shared cache backend for deployments with multiple workers or instances, since the local-memory default keeps counters per process.

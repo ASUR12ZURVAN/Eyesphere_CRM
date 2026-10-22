@@ -1,5 +1,7 @@
 import csv
+import mimetypes
 from datetime import date, datetime, time, timedelta
+from pathlib import PurePosixPath
 
 from django.contrib import messages
 from django.contrib.auth import login
@@ -8,13 +10,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import BookingForm, BulkLeadForm, CSVUploadForm, CallForm, FollowUpForm, LeadForm, ReactivateForm, SnoozeForm
-from .models import AuditLog, Booking, CallActivity, FollowUp, ImportJob, Lead, normalize_mobile
+from .forms import BookingForm, BulkLeadForm, CSVUploadForm, CallForm, FollowUpForm, LeadDocumentUploadForm, LeadForm, ReactivateForm, SnoozeForm
+from .models import AuditLog, Booking, CallActivity, FollowUp, ImportJob, Lead, LeadDocument, normalize_mobile
 from .services import audit, canonical_row, daily_queue, log_call, parse_csv
 
 
@@ -159,7 +161,11 @@ def lead_form(request, lead_id=None):
 
 @login_required
 def lead_detail(request, lead_id):
-	lead = get_object_or_404(Lead.objects.prefetch_related('calls', 'follow_ups', 'bookings', 'audit_entries'), lead_id=lead_id)
+	lead = get_object_or_404(Lead.objects.prefetch_related('calls', 'follow_ups', 'bookings', 'audit_entries', 'documents'), lead_id=lead_id)
+	return render(request, 'lead/lead_detail.html', lead_detail_context(lead))
+
+
+def lead_detail_context(lead, document_form=None):
 	timeline = []
 	timeline.extend({'kind': 'call', 'at': call.called_at, 'title': call.get_outcome_display(), 'body': call.remark, 'meta': f'Call {call.attempt_number}'} for call in lead.calls.all())
 	timeline.extend({'kind': 'follow-up', 'at': task.created_at, 'title': f'{task.get_kind_display()} scheduled', 'body': task.note, 'meta': f'Due {timezone.localtime(task.due_at):%d %b, %I:%M %p}'} for task in lead.follow_ups.all())
@@ -167,17 +173,61 @@ def lead_detail(request, lead_id):
 	timeline.extend({'kind': 'activity', 'at': entry.created_at, 'title': entry.action.replace('_', ' ').title(), 'body': ', '.join(f'{key}: {value}' for key, value in entry.details.items()), 'meta': ''} for entry in lead.audit_entries.all())
 	timeline.append({'kind': 'created', 'at': lead.created_at, 'title': 'Lead created', 'body': f'Added from {lead.get_source_display()}', 'meta': lead.lead_id})
 	timeline.sort(key=lambda item: item['at'], reverse=True)
-	return render(request, 'lead/lead_detail.html', {
+	return {
 		'lead': lead,
 		'timeline': timeline,
 		'call_form': CallForm(),
+		'document_form': document_form or LeadDocumentUploadForm(),
 		'follow_up_form': FollowUpForm(initial={'due_at': lead.next_follow_up}),
 		'reactivate_form': ReactivateForm(),
 		'snooze_form': SnoozeForm(initial={'due_at': lead.next_follow_up}),
 		'booking_form': BookingForm(initial={'service_type': lead.care_type or Lead.CareType.OPD}),
 		'bookings': lead.bookings.all(),
 		'follow_ups': lead.follow_ups.all(),
-	})
+	}
+
+
+@login_required
+@require_POST
+def upload_lead_document(request, lead_id):
+	lead = get_object_or_404(Lead, lead_id=lead_id)
+	form = LeadDocumentUploadForm(request.POST, request.FILES)
+	if not form.is_valid():
+		return render(request, 'lead/lead_detail.html', lead_detail_context(lead, form))
+
+	uploaded_file = form.cleaned_data['file']
+	document = LeadDocument(
+		lead=lead,
+		title=form.cleaned_data['title'],
+		description=form.cleaned_data['description'],
+		original_filename=PurePosixPath(uploaded_file.name.replace('\\', '/')).name,
+		uploaded_by=request.user,
+	)
+	document.file = uploaded_file
+	document.save()
+	audit(lead, 'document_uploaded', {'title': document.title})
+	messages.success(request, f'{document.title} was uploaded.')
+	return redirect('lead_detail', lead_id=lead.lead_id)
+
+
+@login_required
+def download_lead_document(request, lead_id, document_id):
+	document = get_object_or_404(
+		LeadDocument.objects.select_related('lead'),
+		pk=document_id,
+		lead__lead_id=lead_id,
+	)
+	content_type = mimetypes.guess_type(document.original_filename)[0] or 'application/octet-stream'
+	try:
+		document_file = document.file.open('rb')
+	except FileNotFoundError as error:
+		raise Http404('The document file is no longer available.') from error
+	return FileResponse(
+		document_file,
+		as_attachment=True,
+		filename=document.original_filename,
+		content_type=content_type,
+	)
 
 
 @login_required

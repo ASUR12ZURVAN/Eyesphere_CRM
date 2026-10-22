@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Booking, FollowUp, Lead, normalize_mobile
+from .models import Booking, FollowUp, Lead, normalize_mobile, validate_document_file
 
 
 class StyledFormMixin:
@@ -156,6 +156,19 @@ class CSVUploadForm(StyledFormMixin, forms.Form):
         if uploaded.size > 5 * 1024 * 1024:
             raise forms.ValidationError('CSV files must be 5 MB or smaller.')
         return uploaded
+
+
+class LeadDocumentUploadForm(StyledFormMixin, forms.Form):
+    title = forms.CharField(max_length=160, label='Document name')
+    description = forms.CharField(max_length=500, required=False, label='Notes')
+    file = forms.FileField(
+        help_text='PDF, JPEG, or PNG; maximum 10 MB.',
+        validators=[validate_document_file],
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_styles()
 
 
 class BulkLeadForm(StyledFormMixin, forms.Form):
