@@ -33,6 +33,6 @@ python manage.py test lead
 
 Google Sheets, Gmail, WhatsApp messaging, and telephony are external integrations and are not enabled in this MVP. Before deployment, configure a production `SECRET_KEY`, `DEBUG=False`, allowed hosts, HTTPS, and a database backup policy.
 
-The backend loads environment variables from `.env` in `CRM_Back_End`. Copy `.env.example` to `.env` and replace `your_username` and `your_password` in `DATABASE_URL` with your Neon credentials; SSL is required. `.env` is excluded from version control. An optional `READ_DATABASE_URL` can be set for a read replica. Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.
+Set `DATABASE_URL` to the primary database connection and `READ_DATABASE_URL` to the read-replica connection; SSL is required for both. Writes go to the primary and reads normally go to the replica. After a write, reads in that application process go to the primary for five seconds by default to work around replication lag. Set `DATABASE_REPLICA_LAG_SECONDS` to tune that window. The fallback window is process-local, so deployments with multiple workers should use a conservative duration and still use the primary explicitly for any cross-worker read-after-write flow that must be immediately consistent.
 
-Requests are rate-limited per client IP in rolling 60-second windows: 10 GET requests and 5 POST or PUT requests. The limiter uses Django's default cache; configure a shared cache backend for deployments with multiple workers or instances, since the local-memory default keeps counters per process.
+Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.
