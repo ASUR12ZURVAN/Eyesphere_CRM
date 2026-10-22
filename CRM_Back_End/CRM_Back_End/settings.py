@@ -123,6 +123,8 @@ DATABASE_REPLICA_LAG_SECONDS = float(
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+#DATABASE_ROUTERS = []
+
 
 
 # Password validation
