@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'CRM_Back_End.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-
+"""
 if not os.environ.get('DATABASE_URL'):
     raise ImproperlyConfigured('Set the DATABASE_URL environment variable.')
 
@@ -110,15 +110,15 @@ DATABASE_ROUTERS = ["CRM_Back_End.db_router.PrimaryReplicaRouter"]
 DATABASE_REPLICA_LAG_SECONDS = float(
     os.environ.get("DATABASE_REPLICA_LAG_SECONDS", "5")
 )
+"""
 
-# SQLite configuration:
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
+DATABASES = {
+     'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+         'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+DATABASE_ROUTERS = []
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators

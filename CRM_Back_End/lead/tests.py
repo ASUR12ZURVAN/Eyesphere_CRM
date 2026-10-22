@@ -131,6 +131,15 @@ class LeadRulesTests(TestCase):
 		self.assertEqual(response.status_code, 302)
 		self.assertEqual(Lead.objects.count(), 2)
 
+	def test_csv_import_page_shows_format_guidelines(self):
+		response = self.client.get(reverse('lead_import'))
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'CSV Format Guidelines')
+		self.assertContains(response, 'Patient Name')
+		self.assertContains(response, 'External Source ID')
+		self.assertContains(response, '8–15 digits')
+		self.assertContains(response, 'REFERRAL / Referral')
+
 	def test_snoozing_moves_current_reminder_without_erasing_its_due_time(self):
 		original_due = timezone.now() + timedelta(hours=1)
 		self.lead.next_follow_up = original_due
