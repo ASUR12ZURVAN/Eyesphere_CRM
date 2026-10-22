@@ -1,19 +1,22 @@
 from datetime import timedelta
 from io import BytesIO
+import tempfile
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from .forms import LeadForm
-from .models import Booking, CallActivity, Lead, normalize_mobile
+from .models import Booking, CallActivity, Lead, LeadDocument, normalize_mobile
 from .services import daily_queue
 
 
 class LeadRulesTests(TestCase):
 	def setUp(self):
+		cache.clear()
 		user = get_user_model().objects.create_user(username='owner', password='test-password-123')
 		self.client.force_login(user)
 		self.lead = Lead.objects.create(name='Asha Mehta', mobile='98765 43210', source=Lead.Source.REFERRAL)
@@ -186,3 +189,102 @@ class LeadRulesTests(TestCase):
 		self.lead.save()
 		response = self.client.get(reverse('export_csv'))
 		self.assertIn("'=1+1", response.content.decode('utf-8-sig'))
+
+
+class LeadDocumentUploadTests(TestCase):
+	def setUp(self):
+		cache.clear()
+		self.media_dir = tempfile.TemporaryDirectory()
+		self.settings_override = override_settings(MEDIA_ROOT=self.media_dir.name)
+		self.settings_override.enable()
+		self.addCleanup(self.settings_override.disable)
+		self.addCleanup(self.media_dir.cleanup)
+		user = get_user_model().objects.create_user(username='owner', password='test-password-123')
+		self.client.force_login(user)
+		self.lead = Lead.objects.create(name='Asha Mehta', mobile='98765 43210', source=Lead.Source.REFERRAL)
+
+	def test_upload_and_authenticated_download(self):
+		upload = SimpleUploadedFile(
+			'eye-report.pdf',
+			b'%PDF-1.7\npatient report',
+			content_type='application/pdf',
+		)
+		response = self.client.post(
+			reverse('upload_lead_document', args=(self.lead.lead_id,)),
+			{'title': 'Eye examination', 'description': 'Initial visit', 'file': upload},
+		)
+		self.assertRedirects(response, reverse('lead_detail', args=(self.lead.lead_id,)))
+		document = LeadDocument.objects.get(lead=self.lead)
+		self.assertEqual(document.original_filename, 'eye-report.pdf')
+		self.assertEqual(document.uploaded_by.username, 'owner')
+		self.assertTrue(document.file.storage.exists(document.file.name))
+		self.assertIn(self.lead.lead_id, document.file.name)
+		self.assertNotIn(document.original_filename, document.file.name)
+		detail_response = self.client.get(reverse('lead_detail', args=(self.lead.lead_id,)))
+		self.assertContains(detail_response, 'Documents')
+		self.assertContains(detail_response, 'Eye examination')
+		self.assertContains(detail_response, 'Download')
+
+		response = self.client.get(reverse(
+			'download_lead_document',
+			args=(self.lead.lead_id, document.pk),
+		))
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response['Content-Type'], 'application/pdf')
+		self.assertIn('attachment;', response['Content-Disposition'])
+		self.assertIn('eye-report.pdf', response['Content-Disposition'])
+		self.assertEqual(b''.join(response.streaming_content), b'%PDF-1.7\npatient report')
+
+	def test_rejects_unsupported_and_mismatched_files(self):
+		for filename, contents, error in (
+			('report.exe', b'%PDF-1.7\nnot an executable', 'Upload a PDF, JPEG, or PNG file.'),
+			('report.pdf', b'not a PDF', 'file contents do not match its file type.'),
+		):
+			with self.subTest(filename=filename):
+				response = self.client.post(
+					reverse('upload_lead_document', args=(self.lead.lead_id,)),
+					{
+						'title': 'Invalid document',
+						'file': SimpleUploadedFile(filename, contents),
+					},
+				)
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, error, status_code=200)
+		self.assertFalse(LeadDocument.objects.exists())
+
+	def test_rejects_files_over_10_mb(self):
+		upload = SimpleUploadedFile(
+			'large.pdf',
+			b'%PDF-' + b'x' * (10 * 1024 * 1024),
+		)
+		response = self.client.post(
+			reverse('upload_lead_document', args=(self.lead.lead_id,)),
+			{'title': 'Large report', 'file': upload},
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Documents must be 10 MB or smaller.', status_code=200)
+		self.assertFalse(LeadDocument.objects.exists())
+
+	def test_download_requires_login_and_document_belonging_to_lead(self):
+		document = LeadDocument.objects.create(
+			lead=self.lead,
+			title='Eye examination',
+			original_filename='report.pdf',
+			file=SimpleUploadedFile('report.pdf', b'%PDF-1.7\nreport'),
+		)
+		self.client.logout()
+		response = self.client.get(reverse(
+			'download_lead_document',
+			args=(self.lead.lead_id, document.pk),
+		))
+		self.assertRedirects(
+			response,
+			f'{reverse("login")}?next={reverse("download_lead_document", args=(self.lead.lead_id, document.pk))}',
+		)
+		self.client.force_login(get_user_model().objects.get(username='owner'))
+		other_lead = Lead.objects.create(name='Ravi Kumar', mobile='9876543211', source=Lead.Source.REFERRAL)
+		response = self.client.get(reverse(
+			'download_lead_document',
+			args=(other_lead.lead_id, document.pk),
+		))
+		self.assertEqual(response.status_code, 404)

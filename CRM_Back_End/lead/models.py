@@ -1,8 +1,40 @@
 import uuid
+from pathlib import PurePosixPath
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+
+DOCUMENT_MAX_SIZE = 10 * 1024 * 1024
+DOCUMENT_SIGNATURES = {
+    '.pdf': (b'%PDF-',),
+    '.jpg': (b'\xff\xd8\xff',),
+    '.jpeg': (b'\xff\xd8\xff',),
+    '.png': (b'\x89PNG\r\n\x1a\n',),
+}
+
+
+def validate_document_file(uploaded_file):
+    extension = PurePosixPath(uploaded_file.name.replace('\\', '/')).suffix.lower()
+    signatures = DOCUMENT_SIGNATURES.get(extension)
+    if not signatures:
+        raise ValidationError('Upload a PDF, JPEG, or PNG file.')
+    if uploaded_file.size > DOCUMENT_MAX_SIZE:
+        raise ValidationError('Documents must be 10 MB or smaller.')
+
+    try:
+        header = uploaded_file.read(max(map(len, signatures)))
+    finally:
+        uploaded_file.seek(0)
+    if not any(header.startswith(signature) for signature in signatures):
+        raise ValidationError('The file contents do not match its file type.')
+
+
+def document_upload_path(instance, filename):
+    extension = PurePosixPath(filename.replace('\\', '/')).suffix.lower()
+    return f'lead_documents/{instance.lead.lead_id}/{uuid.uuid4().hex}{extension}'
 
 
 def normalize_mobile(value):
@@ -260,3 +292,25 @@ class ImportJob(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class LeadDocument(models.Model):
+    lead = models.ForeignKey(Lead, related_name='documents', on_delete=models.CASCADE)
+    title = models.CharField(max_length=160)
+    description = models.CharField(max_length=500, blank=True)
+    file = models.FileField(upload_to=document_upload_path, validators=[validate_document_file])
+    original_filename = models.CharField(max_length=255)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='uploaded_lead_documents',
+    )
+    uploaded_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ('-uploaded_at',)
+
+    def __str__(self):
+        return f'{self.title} · {self.lead.lead_id}'
