@@ -112,13 +112,19 @@ DATABASE_REPLICA_LAG_SECONDS = float(
 )
 """
 
+#### Start commenting from here to remove the test database
+# SQLite configuration:
 DATABASES = {
-     'default': {
+    'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-         'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 DATABASE_ROUTERS = []
+
+#### Comment till here to remove the test database 
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
