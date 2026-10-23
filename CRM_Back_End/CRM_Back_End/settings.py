@@ -98,6 +98,7 @@ DATABASES = {
         os.environ["DATABASE_URL"],
         conn_max_age=600,
         ssl_require=True,
+        conn_health_checks=True,
     ),
 }
 
@@ -106,6 +107,7 @@ if os.environ.get("READ_DATABASE_URL"):
         os.environ["READ_DATABASE_URL"],
         conn_max_age=600,
         ssl_require=True,
+        conn_health_checks=True,
     )
 
 DATABASE_READ_REPLICA_ENABLED = (
