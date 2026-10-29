@@ -82,6 +82,34 @@ class LeadRulesTests(TestCase):
 		self.assertContains(response, self.lead.lead_id)
 		self.assertEqual(self.client.get(reverse('lead_detail', args=(self.lead.lead_id,))).status_code, 200)
 
+	def test_master_leads_show_twelve_per_page(self):
+		for number in range(14):
+			Lead.objects.create(name=f'Patient {number}', mobile=f'9000000{number:03d}', source=Lead.Source.GOOGLE)
+		first = self.client.get(reverse('lead_list'))
+		self.assertEqual(len(first.context['page'].object_list), 12)
+		self.assertContains(first, 'Showing <strong>1–12</strong> of <strong>15</strong> leads', html=False)
+		self.assertContains(first, 'href="?page=2"')
+		second = self.client.get(reverse('lead_list'), {'q': 'Patient', 'page': 2})
+		self.assertEqual(len(second.context['page'].object_list), 2)
+		self.assertContains(second, 'href="?q=Patient&amp;page=1"')
+
+	def test_only_the_last_opened_lead_is_marked_recently_opened(self):
+		other = Lead.objects.create(name='Ravi Kumar', mobile='91234 56789', source=Lead.Source.GOOGLE)
+		self.assertNotContains(self.client.get(reverse('lead_list')), 'class="recent-pill"')
+		self.client.get(reverse('lead_detail', args=(self.lead.lead_id,)))
+		response = self.client.get(reverse('lead_list'))
+		self.assertContains(response, 'class="recent-pill"', count=1)
+		self.assertEqual(response.context['recent_lead_id'], self.lead.lead_id)
+		self.client.get(reverse('lead_detail', args=(other.lead_id,)))
+		response = self.client.get(reverse('lead_list'))
+		self.assertContains(response, 'class="recent-pill"', count=1)
+		self.assertEqual(response.context['recent_lead_id'], other.lead_id)
+
+	def test_lead_back_link_returns_to_the_same_list_page(self):
+		self.client.get(reverse('lead_list'), {'status': Lead.Status.NEW, 'page': 1})
+		response = self.client.get(reverse('lead_detail', args=(self.lead.lead_id,)))
+		self.assertContains(response, f'href="{reverse("lead_list")}?status=NEW&amp;page=1"')
+
 	def test_private_views_redirect_to_login(self):
 		self.client.logout()
 		response = self.client.get(reverse('lead_list'))

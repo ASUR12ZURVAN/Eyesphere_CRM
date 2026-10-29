@@ -12,12 +12,20 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from .forms import BookingForm, BulkLeadForm, CSVUploadForm, CallForm, FollowUpForm, LeadDocumentUploadForm, LeadForm, ReactivateForm, SnoozeForm
 from .models import AuditLog, Booking, CallActivity, FollowUp, ImportJob, Lead, LeadDocument, normalize_mobile
 from .services import audit, canonical_row, daily_queue, log_call, parse_csv
+
+LEADS_PER_PAGE = 12
+# Per-browser cookies: the lead last opened from the master list, and the list's
+# page/filters so returning from a lead lands back on the same page.
+RECENT_LEAD_COOKIE = 'recent_lead'
+LEAD_LIST_QUERY_COOKIE = 'lead_list_query'
 
 
 def filter_leads(request):
@@ -48,6 +56,11 @@ def filter_leads(request):
 	if request.GET.get('end'):
 		leads = leads.filter(created_at__date__lte=request.GET['end'])
 	return leads.distinct()
+
+
+def lead_list_url(request):
+	query = request.COOKIES.get(LEAD_LIST_QUERY_COOKIE, '')
+	return f"{reverse('lead_list')}?{query}" if query else reverse('lead_list')
 
 
 def create_account(request):
@@ -125,10 +138,19 @@ def dashboard(request):
 
 
 @login_required
+@never_cache
 def lead_list(request):
-	paginator = Paginator(filter_leads(request).order_by('-priority', '-created_at'), 25)
-	return render(request, 'lead/lead_list.html', {
-		'page': paginator.get_page(request.GET.get('page')),
+	paginator = Paginator(filter_leads(request).order_by('-priority', '-created_at'), LEADS_PER_PAGE)
+	page = paginator.get_page(request.GET.get('page'))
+	filters = request.GET.copy()
+	filters.pop('page', None)
+	filter_query = filters.urlencode()
+	response = render(request, 'lead/lead_list.html', {
+		'page': page,
+		'page_range': paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
+		'page_prefix': f'?{filter_query}&page=' if filter_query else '?page=',
+		'filter_query': filter_query,
+		'recent_lead_id': request.COOKIES.get(RECENT_LEAD_COOKIE, ''),
 		'filters': request.GET,
 		'now': timezone.now(),
 		'statuses': Lead.Status.choices,
@@ -138,6 +160,8 @@ def lead_list(request):
 		'outcomes': Lead.Outcome.choices,
 		'bulk_form': BulkLeadForm(),
 	})
+	response.set_cookie(LEAD_LIST_QUERY_COOKIE, request.GET.urlencode(), httponly=True, samesite='Lax')
+	return response
 
 
 @login_required
@@ -162,10 +186,12 @@ def lead_form(request, lead_id=None):
 @login_required
 def lead_detail(request, lead_id):
 	lead = get_object_or_404(Lead.objects.prefetch_related('calls', 'follow_ups', 'bookings', 'audit_entries', 'documents'), lead_id=lead_id)
-	return render(request, 'lead/lead_detail.html', lead_detail_context(lead))
+	response = render(request, 'lead/lead_detail.html', lead_detail_context(request, lead))
+	response.set_cookie(RECENT_LEAD_COOKIE, lead.lead_id, httponly=True, samesite='Lax')
+	return response
 
 
-def lead_detail_context(lead, document_form=None):
+def lead_detail_context(request, lead, document_form=None):
 	timeline = []
 	timeline.extend({'kind': 'call', 'at': call.called_at, 'title': call.get_outcome_display(), 'body': call.remark, 'meta': f'Call {call.attempt_number}'} for call in lead.calls.all())
 	timeline.extend({'kind': 'follow-up', 'at': task.created_at, 'title': f'{task.get_kind_display()} scheduled', 'body': task.note, 'meta': f'Due {timezone.localtime(task.due_at):%d %b, %I:%M %p}'} for task in lead.follow_ups.all())
@@ -175,6 +201,7 @@ def lead_detail_context(lead, document_form=None):
 	timeline.sort(key=lambda item: item['at'], reverse=True)
 	return {
 		'lead': lead,
+		'lead_list_url': lead_list_url(request),
 		'timeline': timeline,
 		'call_form': CallForm(),
 		'document_form': document_form or LeadDocumentUploadForm(),
@@ -193,7 +220,7 @@ def upload_lead_document(request, lead_id):
 	lead = get_object_or_404(Lead, lead_id=lead_id)
 	form = LeadDocumentUploadForm(request.POST, request.FILES)
 	if not form.is_valid():
-		return render(request, 'lead/lead_detail.html', lead_detail_context(lead, form))
+		return render(request, 'lead/lead_detail.html', lead_detail_context(request, lead, form))
 
 	uploaded_file = form.cleaned_data['file']
 	document = LeadDocument(
@@ -348,10 +375,10 @@ def bulk_update_leads(request):
 	selected_ids = request.POST.getlist('lead_ids')
 	if not selected_ids:
 		messages.error(request, 'Select at least one lead first.')
-		return redirect('lead_list')
+		return redirect(lead_list_url(request))
 	if not form.is_valid():
 		messages.error(request, 'Choose valid bulk changes and try again.')
-		return redirect('lead_list')
+		return redirect(lead_list_url(request))
 	changed = 0
 	skipped = 0
 	for lead in Lead.objects.filter(pk__in=selected_ids):
@@ -380,7 +407,7 @@ def bulk_update_leads(request):
 			audit(lead, 'bulk_updated', details)
 			changed += 1
 	messages.success(request, f'{changed} lead{"s" if changed != 1 else ""} updated; {skipped} skipped due to status rules.')
-	return redirect('lead_list')
+	return redirect(lead_list_url(request))
 
 
 @login_required
