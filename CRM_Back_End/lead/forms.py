@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from .models import Booking, FollowUp, Lead, normalize_mobile, validate_document_file
 
@@ -76,7 +77,15 @@ class LeadForm(StyledFormMixin, forms.ModelForm):
 
 
 class CallForm(StyledFormMixin, forms.Form):
-    outcome = forms.ChoiceField(choices=(('', 'Select an outcome'), *Lead.Outcome.choices))
+    outcome = forms.ChoiceField(choices=(
+        ('', 'Select an outcome'),
+        (Lead.Outcome.NOT_PICKED_UP, 'No answer / unreachable'),
+        (Lead.Outcome.CONNECTED, 'Connected'),
+        (Lead.Outcome.CALLBACK, 'Callback requested'),
+        (Lead.Outcome.CONVERTED, 'Converted / booked'),
+        (Lead.Outcome.REJECTED, 'Not interested'),
+        (Lead.Outcome.WRONG_NUMBER, 'Wrong number'),
+    ))
     remark = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 2}))
     next_follow_up = forms.DateTimeField(required=False, input_formats=['%Y-%m-%dT%H:%M'], widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}))
     amount_pitched = forms.DecimalField(required=False, min_value=0, max_digits=12, decimal_places=2, widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0'}))
@@ -92,6 +101,16 @@ class CallForm(StyledFormMixin, forms.Form):
         if cleaned.get('outcome') == Lead.Outcome.PRICING_ISSUE and not cleaned.get('amount_pitched'):
             self.add_error('amount_pitched', 'Record the amount pitched for a pricing concern.')
         return cleaned
+
+
+class UserProfileForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = get_user_model()
+        fields = ('first_name', 'last_name', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_styles()
 
 
 class FollowUpForm(StyledFormMixin, forms.ModelForm):

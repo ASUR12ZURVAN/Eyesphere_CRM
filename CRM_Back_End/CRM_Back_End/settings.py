@@ -93,20 +93,22 @@ WSGI_APPLICATION = 'CRM_Back_End.wsgi.application'
 if not os.environ.get('DATABASE_URL'):
     raise ImproperlyConfigured('Set the DATABASE_URL environment variable.')
 
+DATABASE_URL = os.environ["DATABASE_URL"]
 DATABASES = {
     "default":dj_database_url.parse(
-        os.environ["DATABASE_URL"],
+        DATABASE_URL,
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=not DATABASE_URL.startswith("sqlite:"),
         conn_health_checks=True,
     ),
 }
 
 if os.environ.get("READ_DATABASE_URL"):
+    READ_DATABASE_URL = os.environ["READ_DATABASE_URL"]
     DATABASES["read_replica"] = dj_database_url.parse(
-        os.environ["READ_DATABASE_URL"],
+        READ_DATABASE_URL,
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=not READ_DATABASE_URL.startswith("sqlite:"),
         conn_health_checks=True,
     )
 
@@ -178,8 +180,13 @@ LOGOUT_REDIRECT_URL = 'login'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '25'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', '').lower() == 'true'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'CareBuddy CRM <noreply@localhost>')

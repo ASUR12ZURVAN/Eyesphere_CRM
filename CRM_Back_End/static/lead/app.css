@@ -269,6 +269,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .bulk-toolbar .field-control { min-width: 0; flex: 1 1 44%; }
 }
 
+<<<<<<< Updated upstream
 @media (max-width: 1280px) {
   .filter-row-fields { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
@@ -276,3 +277,96 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 760px) {
   .filter-row-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+=======
+.brand-mark { object-fit: cover; }
+.profile-chip { border-radius: 5px; transition: background .15s ease; }
+.profile-chip:hover { background: #f3f9fc; }
+.metric-card { display: block; color: inherit; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+.metric-card:hover { transform: translateY(-2px); border-color: #c4e3f1; box-shadow: 0 8px 22px rgba(38,97,130,.09); }
+.button-icon { width: 15px; height: 15px; flex: 0 0 auto; }
+.filter-form { display: grid; gap: 12px; }
+.filter-search-row { display: flex; align-items: center; gap: 12px; }
+.filter-actions { display: flex; align-items: center; gap: 15px; flex: 0 0 auto; }
+.filter-submit { gap: 7px; }
+.filter-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); align-items: center; gap: 9px; }
+.filter-grid > .field-control { width: 100%; min-width: 0; }
+.filter-grid > .search-wrap { grid-column: span 2; }
+.date-range-filter { display: flex; grid-column: span 4; align-items: center; gap: 7px; min-width: 0; color: #8196a7; font-size: 10px; }
+.date-range-filter label { flex: 0 0 auto; }
+.date-range-filter .field-control { flex: 1; width: auto; min-width: 0; }
+.date-range-filter > span { flex: 0 0 auto; }
+.filter-grid .check-filter { min-height: 34px; padding: 0 7px; border: 1px solid #e4edf2; border-radius: 4px; background: #fbfdfe; }
+.reset-link { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); border: 0; }
+.daily-metric-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 0 0 15px; }
+.daily-metric-card { display: grid; gap: 5px; padding: 16px 18px; border: 1px solid #e1edf4; border-radius: 6px; background: rgba(255,255,255,.94); transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.daily-metric-card:hover { transform: translateY(-2px); border-color: #b8dcee; box-shadow: 0 6px 18px rgba(38,97,130,.07); }
+.daily-metric-card > span { color: #71899a; font-size: 11px; font-weight: 600; }
+.daily-metric-card strong { color: var(--ink); font-family: var(--font-display); font-size: 25px; line-height: 1.15; }
+.daily-metric-card small { color: #8ca0ae; font-size: 10px; }
+.daily-section-heading { padding: 16px 17px 11px; }
+.daily-section-heading h2 { margin: 5px 0 0; }
+.daily-queue-panel { padding: 0; }
+.daily-queue-panel .queue-alerts { margin: 0; padding: 0 17px 12px; border: 0; background: transparent; }
+.recent-open-panel { margin-top: 15px; }
+.recent-open-list { display: grid; }
+.recent-open-row { display: flex; align-items: center; gap: 11px; min-height: 55px; padding: 9px 0; border-top: 1px solid #eff4f7; }
+.recent-open-row:hover .recent-open-person strong { color: var(--blue-deep); }
+.recent-open-person { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.recent-open-person strong { overflow: hidden; color: #45677c; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.recent-open-person small { color: #8ca0ae; font-size: 10px; }
+.password-control { position: relative; }
+.login-form .password-control input { padding-right: 64px; }
+.password-toggle { position: absolute; top: 50%; right: 9px; transform: translateY(-50%); padding: 5px; border: 0; background: transparent; color: #237fac; cursor: pointer; font-size: 11px; font-weight: 700; }
+.forgot-password { display: block; width: fit-content; margin: 9px 0 0 auto; color: #287fa7; font-size: 11px; font-weight: 600; }
+.forgot-password:hover, .reset-back-link:hover { color: var(--blue-deep); text-decoration: underline; }
+.password-reset-layout { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: radial-gradient(ellipse at 79% 0%, #eaf7ff 0, transparent 34%), var(--canvas); }
+.password-reset-panel { width: min(100%,440px); padding: 30px; }
+.password-reset-panel h1 { margin: 8px 0; font-family: var(--font-display); font-size: 23px; }
+.password-reset-panel > .muted { margin: 0 0 20px; font-size: 12px; line-height: 1.6; }
+.password-reset-panel > .field-label { display: block; margin-bottom: 6px; }
+.password-reset-panel input:not([type=hidden]) { width: 100%; min-height: 42px; margin-bottom: 13px; padding: 9px 11px; border: 1px solid #d9e7ef; border-radius: 4px; color: #33546a; }
+.password-reset-panel .form-field { margin: 14px 0; }
+.password-reset-panel .field-help { display: block; margin-top: 5px; }
+.password-reset-panel .button { margin-top: 10px; }
+.reset-back-link { display: block; margin-top: 16px; color: #287fa7; font-size: 11px; text-align: center; }
+.profile-edit-panel { max-width: 760px; padding: 23px; }
+.profile-account-summary { display: flex; align-items: center; gap: 13px; padding-bottom: 18px; border-bottom: 1px solid #edf3f6; }
+.profile-account-summary > div { display: grid; gap: 4px; }
+.profile-account-summary strong { color: #3e5f74; font-size: 14px; }
+.profile-account-summary small { color: #8ca0ae; font-size: 10px; }
+.profile-form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.detail-grid small { font-size: 10px; }
+.detail-grid strong { font-size: 13px; line-height: 1.45; }
+.timeline-line strong, .booking-list-row strong { font-size: 12px; }
+.timeline-content p { font-size: 11px; line-height: 1.5; }
+.action-panel .field-label { font-size: 10px; }
+.action-panel .field-control { font-size: 12px; }
+.action-panel form { gap: 12px; }
+
+@media (max-width: 1100px) {
+  .filter-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .date-range-filter { grid-column: span 3; }
+}
+@media (max-width: 760px) {
+  .filter-search-row { align-items: stretch; flex-direction: column; }
+  .filter-actions { justify-content: flex-end; }
+  .filter-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .filter-grid > .search-wrap { grid-column: span 2; }
+  .date-range-filter { grid-column: span 2; }
+  .daily-metric-grid { grid-template-columns: 1fr; gap: 8px; }
+  .daily-metric-card { grid-template-columns: 1fr auto; align-items: center; }
+  .daily-metric-card > span, .daily-metric-card small { grid-column: 1; }
+  .daily-metric-card strong { grid-column: 2; grid-row: 1 / span 2; }
+  .profile-form-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .filter-grid { grid-template-columns: 1fr; }
+  .filter-grid > .search-wrap, .date-range-filter { grid-column: auto; }
+  .date-range-filter { flex-wrap: wrap; }
+  .date-range-filter .field-control { flex-basis: calc(50% - 25px); }
+  .recent-open-row { gap: 7px; }
+  .recent-open-row .temperature { display: none; }
+  .password-reset-panel { padding: 22px; }
+}
+>>>>>>> Stashed changes

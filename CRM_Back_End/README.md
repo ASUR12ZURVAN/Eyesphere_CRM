@@ -35,4 +35,6 @@ Google Sheets, Gmail, WhatsApp messaging, and telephony are external integration
 
 Set `DATABASE_URL` to the primary database connection and `READ_DATABASE_URL` to the read-replica connection; SSL is required for both. Writes go to the primary and reads normally go to the replica. After a write, reads in that application process go to the primary for five seconds by default to work around replication lag. Set `DATABASE_REPLICA_LAG_SECONDS` to tune that window. The fallback window is process-local, so deployments with multiple workers should use a conservative duration and still use the primary explicitly for any cross-worker read-after-write flow that must be immediately consistent.
 
+Password recovery sends reset links using Django's configured email backend. Local development defaults to the console backend, which prints the message in the server terminal. Configure `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_USE_TLS`, and `DEFAULT_FROM_EMAIL` for a production SMTP service.
+
 Install the backend dependencies from the repository root with `pip install -r .\CRM_Back_End\requirements.txt`.

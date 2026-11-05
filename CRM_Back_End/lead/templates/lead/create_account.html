@@ -1,9 +1,10 @@
 {% extends 'lead/base.html' %}
+{% load static %}
 {% block title %}Create account{% endblock %}
 {% block public_content %}
 <main class="login-layout">
   <section class="login-aside">
-    <div class="brand brand-light"><span class="brand-mark">E</span><span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span></div>
+    <div class="brand brand-light"><img class="brand-mark" src="{% static 'lead/eyesphere-mark.svg' %}" alt=""><span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span></div>
     <div class="login-message"><div class="eyebrow">A clearer way to care</div><h1>Build your workspace<br>in minutes.</h1><p>Create a secure account to manage patient leads, follow-ups, and bookings.</p></div>
     <div class="login-orbit orbit-one"></div><div class="login-orbit orbit-two"></div>
     <div class="login-footnote">Care, connected.</div>

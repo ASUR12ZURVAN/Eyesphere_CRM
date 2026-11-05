@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from .forms import BookingForm, BulkLeadForm, CSVUploadForm, CallForm, FollowUpForm, LeadDocumentUploadForm, LeadForm, ReactivateForm, SnoozeForm
+from .forms import BookingForm, BulkLeadForm, CSVUploadForm, CallForm, FollowUpForm, LeadDocumentUploadForm, LeadForm, ReactivateForm, SnoozeForm, UserProfileForm
 from .models import AuditLog, Booking, CallActivity, FollowUp, ImportJob, Lead, LeadDocument, normalize_mobile
 from .services import audit, canonical_row, daily_queue, log_call, parse_csv
 
@@ -76,6 +76,18 @@ def create_account(request):
 	else:
 		form = UserCreationForm()
 	return render(request, 'lead/create_account.html', {'form': form})
+
+
+@login_required
+def profile(request):
+	form = UserProfileForm(request.POST or None, instance=request.user)
+	if request.method == 'POST':
+		if form.is_valid():
+			form.save()
+			messages.success(request, 'Your profile details were updated.')
+			return redirect('profile')
+		messages.error(request, 'Profile details were not saved. Check the highlighted fields.')
+	return render(request, 'lead/profile.html', {'form': form})
 
 
 @login_required
@@ -361,9 +373,14 @@ def create_booking(request, lead_id):
 
 @login_required
 def daily_calling(request):
+	now = timezone.now()
+	active_statuses = (Lead.Status.NEW, Lead.Status.OPEN, Lead.Status.FOLLOW_UP, Lead.Status.NOT_PICKED_UP)
 	return render(request, 'lead/daily_calling.html', {
 		'leads': daily_queue(),
-		'due_count': Lead.objects.filter(next_follow_up__lte=timezone.now()).exclude(status__in=(Lead.Status.CONVERTED, Lead.Status.REJECTED, Lead.Status.WASTE)).count(),
+		'due_count': Lead.objects.filter(next_follow_up__lte=now).exclude(status__in=(Lead.Status.CONVERTED, Lead.Status.REJECTED, Lead.Status.WASTE)).count(),
+		'recent_open': Lead.objects.filter(status=Lead.Status.OPEN).order_by('-updated_at')[:5],
+		'recent_open_count': Lead.objects.filter(status=Lead.Status.OPEN).count(),
+		'active_count': Lead.objects.filter(status__in=active_statuses).count(),
 		'target': 65,
 	})
 

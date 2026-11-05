@@ -1,9 +1,10 @@
 {% extends 'lead/base.html' %}
+{% load static %}
 {% block title %}Sign in{% endblock %}
 {% block public_content %}
 <main class="login-layout">
   <section class="login-aside">
-    <div class="brand brand-light"><span class="brand-mark">E</span><span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span></div>
+    <div class="brand brand-light"><img class="brand-mark" src="{% static 'lead/eyesphere-mark.svg' %}" alt=""><span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span></div>
     <div class="login-message"><div class="eyebrow">A clearer way to care</div><h1>Every conversation<br>moves care forward.</h1><p>One calm workspace for your patient leads, follow-ups and bookings.</p></div>
     <div class="login-orbit orbit-one"></div><div class="login-orbit orbit-two"></div>
     <div class="login-footnote">Care, connected.</div>
@@ -13,7 +14,8 @@
       {% csrf_token %}<div class="eyebrow">Welcome back</div><h2>Sign in to CareBuddy</h2><p class="muted">Use your workspace account to continue.</p>
       {% if form.errors %}<div class="form-errors">Your username or password didn't match. Try again.</div>{% endif %}
       <label class="field-label" for="id_username">Username</label>{{ form.username }}
-      <label class="field-label" for="id_password">Password</label>{{ form.password }}
+      <label class="field-label" for="id_password">Password</label><div class="password-control">{{ form.password }}<button class="password-toggle" type="button" aria-controls="id_password" aria-pressed="false">Show</button></div>
+      <a class="forgot-password" href="{% url 'password_reset' %}">Forgot password?</a>
       <input type="hidden" name="next" value="{{ next }}">
       <button class="button button-primary button-wide" type="submit">Sign in <span>→</span></button>
       <div class="login-security"><span>●</span> Private, single-user workspace</div>
@@ -21,3 +23,13 @@
   </section>
 </main>
 {% endblock %}
+{% block scripts %}<script>
+  const passwordInput = document.querySelector('#id_password');
+  const passwordToggle = document.querySelector('.password-toggle');
+  passwordToggle?.addEventListener('click', () => {
+    const shouldShow = passwordInput.type === 'password';
+    passwordInput.type = shouldShow ? 'text' : 'password';
+    passwordToggle.textContent = shouldShow ? 'Hide' : 'Show';
+    passwordToggle.setAttribute('aria-pressed', String(shouldShow));
+  });
+</script>{% endblock %}

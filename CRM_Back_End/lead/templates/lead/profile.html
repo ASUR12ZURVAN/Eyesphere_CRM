@@ -1,0 +1,26 @@
+{% extends 'lead/base.html' %}
+{% block title %}My profile{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div class="eyebrow">YOUR ACCOUNT</div>
+  <h1>My profile</h1>
+  <p>Keep your workspace contact details up to date.</p>
+</div>
+<form class="panel profile-edit-panel" method="post">
+  {% csrf_token %}
+  <div class="profile-account-summary">
+    <span class="profile-avatar">{{ user.username|slice:':1'|upper }}</span>
+    <div><div class="eyebrow">WORKSPACE ACCOUNT</div><strong>{{ user.username }}</strong><small>Username cannot be changed here.</small></div>
+  </div>
+  <div class="form-grid profile-form-grid">
+    {% for field in form %}
+      <div class="form-field {% if field.errors %}has-errors{% endif %}">
+        <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<small class="field-error" role="alert">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="form-actions"><a class="button button-quiet" href="{% url 'dashboard' %}">Cancel</a><button class="button button-primary" type="submit">Save profile</button></div>
+</form>
+{% endblock %}

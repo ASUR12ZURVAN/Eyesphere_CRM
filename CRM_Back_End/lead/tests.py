@@ -3,13 +3,14 @@ from io import BytesIO
 import tempfile
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import LeadForm
+from .forms import CallForm, LeadForm
 from .models import Booking, CallActivity, Lead, LeadDocument, normalize_mobile
 from .services import daily_queue
 
@@ -81,6 +82,52 @@ class LeadRulesTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, self.lead.lead_id)
 		self.assertEqual(self.client.get(reverse('lead_detail', args=(self.lead.lead_id,))).status_code, 200)
+		response = self.client.get(reverse('daily_calling'))
+		self.assertContains(response, 'Today\'s calling list')
+		self.assertContains(response, 'Open leads')
+
+	def test_login_has_password_visibility_and_recovery_controls(self):
+		self.client.logout()
+		response = self.client.get(reverse('login'))
+		self.assertContains(response, 'password-toggle')
+		self.assertContains(response, reverse('password_reset'))
+
+	def test_profile_updates_basic_contact_details(self):
+		response = self.client.get(reverse('profile'))
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'owner')
+		self.client.post(reverse('profile'), {
+			'first_name': 'Asha',
+			'last_name': 'Mehta',
+			'email': 'asha@example.com',
+		})
+		user = get_user_model().objects.get(username='owner')
+		self.assertEqual((user.first_name, user.last_name, user.email), ('Asha', 'Mehta', 'asha@example.com'))
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_password_reset_emails_link_and_completes(self):
+		user = get_user_model().objects.get(username='owner')
+		user.email = 'owner@example.com'
+		user.save(update_fields=['email'])
+		response = self.client.post(reverse('password_reset'), {'email': user.email})
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertIn('Reset your Eyesphere', mail.outbox[0].subject)
+		reset_path = mail.outbox[0].body.split('/accounts/reset/', 1)[1].splitlines()[0].rstrip('/')
+		uid, token = reset_path.split('/', 1)
+		response = self.client.get(reverse('password_reset_confirm', args=(uid, token)))
+		self.assertEqual(response.status_code, 302)
+		response = self.client.post(response.url, {
+			'new_password1': 'new-unique-password-9284',
+			'new_password2': 'new-unique-password-9284',
+		})
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(response.url, reverse('password_reset_complete'))
+		user.refresh_from_db(using='default')
+		self.assertTrue(user.check_password('new-unique-password-9284'))
+
+	def test_call_form_shows_only_six_simple_outcomes(self):
+		self.assertEqual(len(list(CallForm().fields['outcome'].choices)), 7)
 
 	def test_master_leads_show_twelve_per_page(self):
 		for number in range(14):
