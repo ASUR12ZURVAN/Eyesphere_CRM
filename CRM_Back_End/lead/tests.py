@@ -1,6 +1,8 @@
 from datetime import timedelta
 from io import BytesIO
 import tempfile
+from unittest.mock import patch
+from urllib.parse import urlsplit
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -78,13 +80,27 @@ class LeadRulesTests(TestCase):
 		response = self.client.get(reverse('dashboard'))
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'Today\'s calling list')
+		self.assertContains(response, 'Eyesphere logo')
+		self.assertContains(response, 'Open profile for owner')
+		self.assertNotContains(response, '>My profile</a>')
 		response = self.client.get(reverse('lead_list'))
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, self.lead.lead_id)
+		self.assertContains(response, '<h1>Master leads</h1>', count=1)
+		self.assertContains(response, '↑ <span>Export filtered</span>')
 		self.assertEqual(self.client.get(reverse('lead_detail', args=(self.lead.lead_id,))).status_code, 200)
 		response = self.client.get(reverse('daily_calling'))
 		self.assertContains(response, 'Today\'s calling list')
 		self.assertContains(response, 'Open leads')
+
+	def test_crm2026_profile_button_opens_profile(self):
+		user = get_user_model().objects.get(username='owner')
+		user.username = 'CRM2026'
+		user.save(update_fields=['username'])
+		response = self.client.get(reverse('dashboard'))
+		self.assertContains(response, 'aria-label="Open profile for CRM2026"')
+		self.assertContains(response, '<strong>CRM2026</strong>')
+		self.assertEqual(self.client.get(reverse('profile')).status_code, 200)
 
 	def test_login_has_password_visibility_and_recovery_controls(self):
 		self.client.logout()
@@ -96,6 +112,7 @@ class LeadRulesTests(TestCase):
 		response = self.client.get(reverse('profile'))
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'owner')
+		self.assertContains(response, reverse('password_change_request'))
 		self.client.post(reverse('profile'), {
 			'first_name': 'Asha',
 			'last_name': 'Mehta',
@@ -113,6 +130,7 @@ class LeadRulesTests(TestCase):
 		self.assertEqual(response.status_code, 302)
 		self.assertEqual(len(mail.outbox), 1)
 		self.assertIn('Reset your Eyesphere', mail.outbox[0].subject)
+		self.assertEqual(mail.outbox[0].from_email, 'connect@eyesphere.in')
 		reset_path = mail.outbox[0].body.split('/accounts/reset/', 1)[1].splitlines()[0].rstrip('/')
 		uid, token = reset_path.split('/', 1)
 		response = self.client.get(reverse('password_reset_confirm', args=(uid, token)))
@@ -125,6 +143,55 @@ class LeadRulesTests(TestCase):
 		self.assertEqual(response.url, reverse('password_reset_complete'))
 		user.refresh_from_db(using='default')
 		self.assertTrue(user.check_password('new-unique-password-9284'))
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_password_change_requires_email_verification(self):
+		user = get_user_model().objects.get(username='owner')
+		user.email = 'owner@example.com'
+		user.save(update_fields=['email'])
+		response = self.client.post(reverse('password_change_request'))
+		self.assertRedirects(response, reverse('profile'))
+		self.assertEqual(len(mail.outbox), 1)
+		self.assertEqual(mail.outbox[0].from_email, 'connect@eyesphere.in')
+		self.assertIn(user.email, mail.outbox[0].to)
+		confirm_path = urlsplit(mail.outbox[0].body.splitlines()[3]).path
+		response = self.client.get(confirm_path)
+		self.assertEqual(response.status_code, 302)
+		response = self.client.post(response.url, {
+			'new_password1': 'changed-unique-password-4821',
+			'new_password2': 'changed-unique-password-4821',
+		})
+		self.assertRedirects(response, reverse('password_change_complete'), fetch_redirect_response=False)
+		user.refresh_from_db(using='default')
+		self.assertTrue(user.check_password('changed-unique-password-4821'))
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	def test_password_change_requires_profile_email(self):
+		response = self.client.post(reverse('password_change_request'), follow=True)
+		self.assertRedirects(response, reverse('profile'))
+		self.assertEqual(len(mail.outbox), 0)
+		self.assertContains(response, 'Add an email address')
+
+	@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+	@patch('lead.views.send_mail', return_value=0)
+	def test_password_change_reports_email_delivery_failure(self, send_mail_mock):
+		user = get_user_model().objects.get(username='owner')
+		user.email = 'owner@example.com'
+		user.save(update_fields=['email'])
+		response = self.client.post(reverse('password_change_request'), follow=True)
+		self.assertContains(response, 'The verification email could not be sent')
+		send_mail_mock.assert_called_once()
+
+	def test_daily_calling_paginates_twelve_leads(self):
+		for number in range(13):
+			Lead.objects.create(name=f'Queue patient {number}', mobile=f'9000000{number:03d}', source=Lead.Source.GOOGLE)
+		first = self.client.get(reverse('daily_calling'))
+		self.assertEqual(len(first.context['page'].object_list), 12)
+		self.assertEqual(first.context['page'].paginator.count, 14)
+		self.assertContains(first, 'Showing <strong>1–12</strong> of <strong>14</strong> leads', html=False)
+		self.assertContains(first, 'href="?page=2"')
+		second = self.client.get(reverse('daily_calling'), {'page': 2})
+		self.assertEqual(len(second.context['page'].object_list), 2)
 
 	def test_call_form_shows_only_six_simple_outcomes(self):
 		self.assertEqual(len(list(CallForm().fields['outcome'].choices)), 7)

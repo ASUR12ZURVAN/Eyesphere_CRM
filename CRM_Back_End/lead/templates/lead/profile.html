@@ -23,4 +23,8 @@
   </div>
   <div class="form-actions"><a class="button button-quiet" href="{% url 'dashboard' %}">Cancel</a><button class="button button-primary" type="submit">Save profile</button></div>
 </form>
+<section class="panel account-security-panel">
+  <div><div class="eyebrow">ACCOUNT SECURITY</div><h2>Change your password</h2><p class="muted">We’ll send a verification link to {{ user.email|default:'your profile email address' }} before allowing a password change.</p></div>
+  <a class="button button-secondary" href="{% url 'password_change_request' %}">Verify by email <span>→</span></a>
+</section>
 {% endblock %}

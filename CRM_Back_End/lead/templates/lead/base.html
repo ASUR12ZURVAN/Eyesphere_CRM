@@ -17,7 +17,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <a class="brand" href="{% url 'dashboard' %}" aria-label="Eyesphere CareBuddy home">
-        <img class="brand-mark" src="{% static 'lead/eyesphere-mark.svg' %}" alt="">
+        <img class="brand-mark" src="{% static 'lead/eyesphere-mark.svg' %}" alt="Eyesphere logo">
         <span><strong>eyesphere</strong><small>CARE BUDDY CRM</small></span>
       </a>
       <div class="nav-caption">WORKSPACE</div>
@@ -27,11 +27,10 @@
         <a class="nav-link {% if request.resolver_match.url_name == 'daily_calling' %}active{% endif %}" href="{% url 'daily_calling' %}"><span class="nav-icon">⌁</span>Daily calling <span class="nav-count">{{ sidebar_due_count|default:0 }}</span></a>
         <a class="nav-link {% if request.resolver_match.url_name == 'booking_list' %}active{% endif %}" href="{% url 'booking_list' %}"><span class="nav-icon">▦</span>Bookings</a>
         <a class="nav-link {% if request.resolver_match.url_name == 'lead_import' %}active{% endif %}" href="{% url 'lead_import' %}"><span class="nav-icon">⇧</span>Import leads</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="{% url 'profile' %}"><span class="nav-icon">◉</span>My profile</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="online-indicator"><span></span>CRM is up to date</div>
-        <a class="profile-chip" href="{% url 'profile' %}"><span class="avatar">{{ user.username|slice:':1'|upper }}</span><span><strong>{{ user.get_short_name|default:user.username }}</strong><small>My profile</small></span></a>
+        <a class="profile-chip" href="{% url 'profile' %}" aria-label="Open profile for {{ user.username }}"><span class="avatar">{{ user.username|slice:':1'|upper }}</span><span><strong>{{ user.username }}</strong><small>My profile</small></span></a>
         <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="logout-button" type="submit">Sign out</button></form>
       </div>
     </aside>

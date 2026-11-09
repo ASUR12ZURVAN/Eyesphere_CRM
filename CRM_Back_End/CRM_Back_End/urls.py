@@ -39,6 +39,14 @@ urlpatterns = [
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(
         template_name='lead/password_reset_complete.html',
     ), name='password_reset_complete'),
+    path('accounts/password-change/', views.request_password_change, name='password_change_request'),
+    path('accounts/password-change/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='lead/password_change_confirm.html',
+        success_url='/accounts/password-change/done/',
+    ), name='password_change_confirm'),
+    path('accounts/password-change/done/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='lead/password_change_complete.html',
+    ), name='password_change_complete'),
     path('accounts/create/', views.create_account, name='create_account'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('', include('lead.urls')),

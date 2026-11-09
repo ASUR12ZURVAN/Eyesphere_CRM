@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-heading heading-row">
   <div><div class="eyebrow">{{ today|date:'l, d F'|upper }}</div><h1>Good work starts here.</h1><p>Your lead activity, follow-ups and bookings in one view.</p></div>
-  <div class="heading-actions"><a class="button button-quiet" href="{% url 'export_csv' %}"><svg class="button-icon" aria-hidden="true" viewBox="0 0 16 16"><path d="M8 1v9m-3-3 3 3 3-3M2 11v3h12v-3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg><span>Export</span></a><a class="button button-primary" href="{% url 'lead_create' %}">＋ <span>New lead</span></a></div>
+  <div class="heading-actions"><a class="button button-quiet" href="{% url 'export_csv' %}"><svg class="button-icon" aria-hidden="true" viewBox="0 0 16 16"><path d="M8 10V1m-3 3 3-3 3 3M2 11v3h12v-3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg><span>Export</span></a><a class="button button-primary" href="{% url 'lead_create' %}">＋ <span>New lead</span></a></div>
 </div>
 <form class="date-filter" method="get"><span class="date-filter-label">PERFORMANCE WINDOW</span><input class="field-control" type="date" name="start" value="{{ start_date|date:'Y-m-d' }}" aria-label="Start date"><span class="date-separator">to</span><input class="field-control" type="date" name="end" value="{{ end_date|date:'Y-m-d' }}" aria-label="End date"><button class="button button-small" type="submit">Apply</button></form>
 <section class="metric-grid" aria-label="Performance metrics">

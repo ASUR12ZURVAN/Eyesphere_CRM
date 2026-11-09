@@ -3,17 +3,23 @@ import mimetypes
 from datetime import date, datetime, time, timedelta
 from pathlib import PurePosixPath
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -88,6 +94,32 @@ def profile(request):
 			return redirect('profile')
 		messages.error(request, 'Profile details were not saved. Check the highlighted fields.')
 	return render(request, 'lead/profile.html', {'form': form})
+
+
+@login_required
+def request_password_change(request):
+	if request.method == 'POST':
+		if not request.user.email:
+			messages.error(request, 'Add an email address to your profile before changing your password.')
+			return redirect('profile')
+		uid = urlsafe_base64_encode(force_bytes(request.user.pk))
+		token = default_token_generator.make_token(request.user)
+		confirm_url = request.build_absolute_uri(reverse(
+			'password_change_confirm',
+			kwargs={'uidb64': uid, 'token': token},
+		))
+		sent_count = send_mail(
+			'Verify your password change - Eyesphere CRM',
+			render_to_string('lead/password_change_email.txt', {'confirm_url': confirm_url}),
+			settings.DEFAULT_FROM_EMAIL,
+			[request.user.email],
+		)
+		if sent_count != 1:
+			messages.error(request, 'The verification email could not be sent. Please try again later.')
+			return redirect('profile')
+		messages.success(request, f'A password change verification link was sent to {request.user.email}.')
+		return redirect('profile')
+	return render(request, 'lead/password_change_request.html')
 
 
 @login_required
@@ -375,8 +407,11 @@ def create_booking(request, lead_id):
 def daily_calling(request):
 	now = timezone.now()
 	active_statuses = (Lead.Status.NEW, Lead.Status.OPEN, Lead.Status.FOLLOW_UP, Lead.Status.NOT_PICKED_UP)
+	page = Paginator(daily_queue(), 12).get_page(request.GET.get('page'))
 	return render(request, 'lead/daily_calling.html', {
-		'leads': daily_queue(),
+		'leads': page.object_list,
+		'page': page,
+		'queue_total': page.paginator.count,
 		'due_count': Lead.objects.filter(next_follow_up__lte=now).exclude(status__in=(Lead.Status.CONVERTED, Lead.Status.REJECTED, Lead.Status.WASTE)).count(),
 		'recent_open': Lead.objects.filter(status=Lead.Status.OPEN).order_by('-updated_at')[:5],
 		'recent_open_count': Lead.objects.filter(status=Lead.Status.OPEN).count(),

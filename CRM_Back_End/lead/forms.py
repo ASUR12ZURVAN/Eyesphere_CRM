@@ -110,6 +110,7 @@ class UserProfileForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['email'].required = True
         self.apply_styles()
 
 
