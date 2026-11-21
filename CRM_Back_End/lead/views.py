@@ -57,11 +57,22 @@ def filter_leads(request):
 		leads = leads.filter(status=Lead.Status.CONVERTED)
 	elif request.GET.get('converted') == '0':
 		leads = leads.exclude(status=Lead.Status.CONVERTED)
-	if request.GET.get('start'):
-		leads = leads.filter(created_at__date__gte=request.GET['start'])
-	if request.GET.get('end'):
-		leads = leads.filter(created_at__date__lte=request.GET['end'])
+	for parameter, lookup in (('start', 'gte'), ('end', 'lte')):
+		value = request.GET.get(parameter, '').strip()
+		if value:
+			filter_date = parse_lead_list_date(value)
+			if filter_date:
+				leads = leads.filter(**{f'created_at__date__{lookup}': filter_date})
 	return leads.distinct()
+
+
+def parse_lead_list_date(value):
+	for date_format in ('%d-%m-%Y', '%Y-%m-%d'):
+		try:
+			return datetime.strptime(value, date_format).date()
+		except ValueError:
+			continue
+	return None
 
 
 def lead_list_url(request):
@@ -189,6 +200,11 @@ def lead_list(request):
 	filters = request.GET.copy()
 	filters.pop('page', None)
 	filter_query = filters.urlencode()
+	date_filters = {}
+	for parameter in ('start', 'end'):
+		value = request.GET.get(parameter, '').strip()
+		filter_date = parse_lead_list_date(value)
+		date_filters[parameter] = filter_date.strftime('%d-%m-%Y') if filter_date else value
 	response = render(request, 'lead/lead_list.html', {
 		'page': page,
 		'page_range': paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
@@ -196,13 +212,13 @@ def lead_list(request):
 		'filter_query': filter_query,
 		'recent_lead_id': request.COOKIES.get(RECENT_LEAD_COOKIE, ''),
 		'filters': request.GET,
+		'date_filters': date_filters,
 		'now': timezone.now(),
 		'statuses': Lead.Status.choices,
 		'temperatures': Lead.Temperature.choices,
 		'sources': Lead.Source.choices,
 		'care_types': Lead.CareType.choices,
 		'outcomes': Lead.Outcome.choices,
-		'bulk_form': BulkLeadForm(),
 	})
 	response.set_cookie(LEAD_LIST_QUERY_COOKIE, request.GET.urlencode(), httponly=True, samesite='Lax')
 	return response
@@ -474,7 +490,12 @@ def booking_list(request):
 	bookings = Booking.objects.filter(appointment_at__date__gte=month, appointment_at__date__lt=next_month).select_related('lead')
 	if request.GET.get('status'):
 		bookings = bookings.filter(status=request.GET['status'])
-	return render(request, 'lead/booking_list.html', {'bookings': bookings, 'month': month_value, 'statuses': Booking.Status.choices})
+	return render(request, 'lead/booking_list.html', {
+		'bookings': bookings,
+		'month': month_value,
+		'month_date': month,
+		'statuses': Booking.Status.choices,
+	})
 
 
 @login_required

@@ -61,12 +61,9 @@ class Lead(models.Model):
         OTHER = 'OTHER', 'Other'
 
     class CareType(models.TextChoices):
-        AT_HOME = 'AT_HOME', 'At Home Screening / Visit'
+        AT_HOME = 'AT_HOME', 'At Home'
         OPD = 'OPD', 'OPD'
         IPD = 'IPD', 'IPD'
-        HOSPITAL_REFERRED = 'HOSPITAL_REFERRED', 'Hospital Referred'
-        SURGERY = 'SURGERY', 'Surgery'
-        MULTIPLE = 'MULTIPLE', 'Multiple'
 
     class Temperature(models.TextChoices):
         HOT = 'HOT', 'Hot'

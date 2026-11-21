@@ -18,9 +18,9 @@ class LeadForm(StyledFormMixin, forms.ModelForm):
             'name', 'mobile', 'alternate_mobile', 'email', 'location', 'address',
             'source', 'campaign', 'care_type', 'eye_health_score', 'requirement',
             'requirement_notes', 'temperature', 'status', 'outcome_reason',
-            'conversation_happened', 'amount_pitched', 'amount_executed',
+            'amount_pitched', 'amount_executed',
             'date_executed', 'brochure_sent', 'next_follow_up', 'latest_remark',
-            'priority', 'priority_reason', 'external_source_id', 'conversion_reason',
+            'priority', 'priority_reason', 'conversion_reason',
         )
         widgets = {
             'address': forms.Textarea(attrs={'rows': 2}),

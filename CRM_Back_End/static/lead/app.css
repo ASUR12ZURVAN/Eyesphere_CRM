@@ -224,6 +224,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .field-help { color: #8ba0ad; font-size: 9px; }.field-error { color: #b4544b; font-size: 10px; }
 .form-field textarea.field-control { resize: vertical; }
 .check-field { display: flex; min-height: 36px; align-items: center; gap: 8px; color: #526e81; font-size: 11px; }
+.lead-edit-form .checkbox-field { display: flex; min-height: 40px; align-items: center; }
+.lead-edit-form .checkbox-field .check-field { min-height: 0; margin: 0; }
 .form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 24px; padding-top: 17px; border-top: 1px solid #edf3f6; }
 
 .profile-heading { margin-bottom: 17px; }.profile-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.profile-identity { display: flex; align-items: center; gap: 13px; min-width: 0; }

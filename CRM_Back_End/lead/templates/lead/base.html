@@ -26,7 +26,7 @@
         <a class="nav-link {% if request.resolver_match.url_name == 'lead_list' or request.resolver_match.url_name == 'lead_create' %}active{% endif %}" href="{% url 'lead_list' %}"><span class="nav-icon">◎</span>Master leads</a>
         <a class="nav-link {% if request.resolver_match.url_name == 'daily_calling' %}active{% endif %}" href="{% url 'daily_calling' %}"><span class="nav-icon">⌁</span>Daily calling <span class="nav-count">{{ sidebar_due_count|default:0 }}</span></a>
         <a class="nav-link {% if request.resolver_match.url_name == 'booking_list' %}active{% endif %}" href="{% url 'booking_list' %}"><span class="nav-icon">▦</span>Bookings</a>
-        <a class="nav-link {% if request.resolver_match.url_name == 'lead_import' %}active{% endif %}" href="{% url 'lead_import' %}"><span class="nav-icon">⇧</span>Import leads</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'lead_import' %}active{% endif %}" href="{% url 'lead_import' %}"><span class="nav-icon">⇩</span>Import leads</a>
       </nav>
       <div class="sidebar-bottom">
         <div class="online-indicator"><span></span>CRM is up to date</div>
