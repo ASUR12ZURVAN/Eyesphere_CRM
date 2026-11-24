@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 import tempfile
 from unittest.mock import patch
@@ -243,6 +243,23 @@ class LeadRulesTests(TestCase):
 		self.assertEqual(self.lead.status, Lead.Status.FOLLOW_UP)
 		self.assertEqual(self.lead.follow_ups.count(), 1)
 		self.assertEqual(self.lead.latest_remark, 'Patient asked to revisit after family discussion')
+
+	def test_follow_up_datetime_is_interpreted_and_rendered_in_default_timezone(self):
+		with timezone.override('UTC'):
+			response = self.client.post(reverse('schedule_follow_up', args=(self.lead.lead_id,)), {
+				'due_at': '2026-11-24T18:00',
+				'kind': 'CALL',
+				'note': '',
+			})
+			self.assertEqual(response.status_code, 302)
+
+			self.lead.refresh_from_db()
+			expected = timezone.make_aware(datetime(2026, 11, 24, 18, 0), timezone.get_default_timezone())
+			self.assertEqual(self.lead.next_follow_up, expected)
+			self.assertEqual(self.lead.follow_ups.get().due_at, expected)
+
+			detail = self.client.get(reverse('lead_detail', args=(self.lead.lead_id,)))
+			self.assertContains(detail, 'value="2026-11-24T18:00"')
 
 	def test_booking_updates_converted_lead_and_revenue_dashboard(self):
 		appointment = timezone.localtime(timezone.now() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')

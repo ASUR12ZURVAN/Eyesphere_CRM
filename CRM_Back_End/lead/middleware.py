@@ -5,6 +5,16 @@ import time
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse
+from django.utils import timezone
+
+
+class DefaultTimezoneMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        with timezone.override(timezone.get_default_timezone()):
+            return self.get_response(request)
 
 
 class RequestRateLimitMiddleware:

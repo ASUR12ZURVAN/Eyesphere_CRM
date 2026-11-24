@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     #'lead.middleware.RequestRateLimitMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'lead.middleware.DefaultTimezoneMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

@@ -21,6 +21,7 @@ Open `http://127.0.0.1:8000/` and sign in with the account created above. The ad
 - Search and filter leads, add or edit a patient profile, and export the current filtered inventory.
 - Record call outcomes. No-contact outcomes schedule the next weekday retry; the fourth closes the lead as Waste. A conversation resets the retry sequence while retaining every call.
 - Schedule and snooze follow-ups, reactivate rejected or waste leads with a reason, and create bookings with insurance and execution values.
+- Date and time entry and display use the configured India timezone (`Asia/Kolkata`, IST).
 - Upload PDF, JPEG, and PNG documents (up to 10 MB each) to a lead profile; downloads require a signed-in user. Files are stored under `MEDIA_ROOT` using generated storage names. Configure `MEDIA_ROOT` to a persistent volume or Django-compatible object storage in production so uploads survive redeployments. A vector database is not needed for storing and downloading files; it would only be useful later for semantic search or AI retrieval over document contents.
 - Import CSV files after preview and validation. Required headers are `Name`, `Mobile`, and `Source`; `Campaign`, `Location`, `Email`, and `External Source ID` are also recognized. Existing mobiles and source IDs are skipped.
 - Export daily calling, call history, bookings, revenue, source conversion, and lost-reason reports from the dashboard.
